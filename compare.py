@@ -1,12 +1,12 @@
 import cv2
 import numpy as np
-from skimage.metrics import structural_similarity as compare_ssim
+from pathlib import Path
 
 # Open the 23.976 fps video
-cap1 = cv2.VideoCapture('~/Downloads/[Beatrice-Raws] Evangelion 3.0+1.0 Thrice Upon a Time [WebRip 1920x816 HEVC E-AC3].mkv')
+cap1 = cv2.VideoCapture(str(Path('~').expanduser())+'/Downloads/[Beatrice-Raws] Evangelion 3.0+1.0 Thrice Upon a Time [WebRip 1920x816 HEVC E-AC3].mkv')
 
 # Open the 24 fps video
-cap2 = cv2.VideoCapture('~/Downloads/output.mkv')
+cap2 = cv2.VideoCapture(str(Path('~').expanduser())+'/Downloads/output.mkv')
 
 # Get the original framerates
 orig_fps1 = cap1.get(cv2.CAP_PROP_FPS)
