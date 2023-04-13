@@ -92,6 +92,9 @@ while True:
     #print("SSIM: {}".format(score))
 
     # Display the difference between the frames
+    cv2.putText(frame1, f'3.0+1.0 web: {cap1.get(cv2.CAP_PROP_POS_MSEC)/1000}',(10,50),cv2.FONT_HERSHEY_SIMPLEX, 1, (255, 255, 255), 2)
+    cv2.putText(frame2, f'3.0+1.11 bd: {cap2.get(cv2.CAP_PROP_POS_MSEC)/1000}',(10,50),cv2.FONT_HERSHEY_SIMPLEX, 1, (255, 255, 255), 2)
+
     layout = cv2.hconcat([frame1,frame2])
 
     diff = cv2.cvtColor(diff,cv2.COLOR_GRAY2BGR)
