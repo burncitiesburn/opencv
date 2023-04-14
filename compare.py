@@ -1,12 +1,19 @@
 import cv2
 import numpy as np
 from pathlib import Path
+import datetime
+from skimage.metrics import structural_similarity
 
 # Open the 23.976 fps video
 cap1 = cv2.VideoCapture(str(Path('~').expanduser())+'/Downloads/[Beatrice-Raws] Evangelion 3.0+1.0 Thrice Upon a Time [WebRip 1920x816 HEVC E-AC3].mkv')
 
 # Open the 24 fps video
-cap2 = cv2.VideoCapture(str(Path('~').expanduser())+'/Downloads/output.mkv')
+cap2 = cv2.VideoCapture(str(Path('~').expanduser())+'/Documents/Evangelion - 3.0+1.11 Thrice Upon a Time (2021) CUSTOM MULTi 1080p 10bits BluRay x265 DDP 5.1 -Punisher694.mkv')
+
+fourcc = cv2.VideoWriter_fourcc(*'mp4v') # codec
+fps = 24
+frameSize = (3840,1632)
+out = cv2.VideoWriter('output3.mp4', fourcc, fps, frameSize)
 
 # Get the original framerates
 orig_fps1 = cap1.get(cv2.CAP_PROP_FPS)
@@ -21,17 +28,19 @@ target_frame_duration = 1 / target_fps
 # Initialize a counter and timer for each video
 
 
-x_seconds = 12
-cap2.set(cv2.CAP_PROP_POS_MSEC, x_seconds * 1000)
+#x_seconds = 0
+#cap2.set(cv2.CAP_PROP_POS_MSEC, x_seconds * 1000)
 
 frame_counter1 = 1
 prev_frame_time1 = 0
 
-frame_counter2 = cap2.get(cv2.CAP_PROP_POS_FRAMES)
+frame_counter2 = 1
 prev_frame_time2 = 0
 
 cv2.namedWindow('Video', cv2.WINDOW_NORMAL)
 
+f = open('values.txt','w')
+f.write(f'time,mseg,msec,msegb\n')
 # Loop through each frame of the videos
 while True:
     
@@ -80,28 +89,24 @@ while True:
     luma_diff =  avg_luma - avg_luma2
 
     frame2g = cv2.add(frame2g,luma_diff)
-    diff_img = cv2.GaussianBlur(frame1g, (5, 5), 0)
-    diff_img2 = cv2.GaussianBlur(frame2g, (5, 5), 0)
+    diff_img = cv2.GaussianBlur(frame1g, (15, 15), 0)
+    diff_img2 = cv2.GaussianBlur(frame2g, (15, 15), 0)
 
-    diff = cv2.absdiff( cv2.GaussianBlur(frame1g, (5, 5), 0), cv2.GaussianBlur(frame2g, (5, 5), 0))
-
-    #(score, diff) = compare_ssim(diff_img, diff_img2, full=True)
-    #diff = (diff * 255).astype("uint8")
-    #if mse < 6219956:
-    #    continue
-    #print("SSIM: {}".format(score))
-
+    diff = cv2.absdiff( frame1g, frame2g)
+    diff2 = cv2.absdiff( frame1, frame2)
+    diff3 = cv2.absdiff(diff_img,diff_img2)
+    mse = np.mean(diff ** 2)
+    mse2 = np.mean(diff2 ** 2)
+    mse3 = np.mean(diff3 ** 2)
+    f.write(f'{cap1.get(cv2.CAP_PROP_POS_MSEC)/1000},{mse},{mse2},{mse3}\n')
     # Display the difference between the frames
-    cv2.putText(frame1, f'3.0+1.0 web: {cap1.get(cv2.CAP_PROP_POS_MSEC)/1000}',(10,50),cv2.FONT_HERSHEY_SIMPLEX, 1, (255, 255, 255), 2)
-    cv2.putText(frame2, f'3.0+1.11 bd: {cap2.get(cv2.CAP_PROP_POS_MSEC)/1000}',(10,50),cv2.FONT_HERSHEY_SIMPLEX, 1, (255, 255, 255), 2)
 
+    diff = cv2.cvtColor(diff3,cv2.COLOR_GRAY2RGB)
+   
     layout = cv2.hconcat([frame1,frame2])
-
-    diff = cv2.cvtColor(diff,cv2.COLOR_GRAY2BGR)
-    diff2 = diff
-
-    converted_layout2_clr = cv2.addWeighted(diff2,5,diff2,2,0.0)
-    layout2 = cv2.hconcat([diff,converted_layout2_clr])
+    #converted_layout2_clr = cv2.addWeighted(diff2,5,diff2,2,0.0)
+  
+    layout2 = cv2.hconcat([diff,diff2])
     #print(layout.shape)
     #print(layout2.shape)
     #print(converted_layout2_clr.shape)
@@ -109,12 +114,23 @@ while True:
     #print(layout3.shape)
     #cv2.imshow('frame1', frame1)
     #cv2.imshow('frame2', frame2)
+    layout3 = cv2.copyMakeBorder(layout3, 100, 100, 100, 100, cv2.BORDER_CONSTANT, value=[0, 0, 0])
+    cv2.putText(layout3, f'3.0+1.0 web: {str(datetime.timedelta(seconds=cap1.get(cv2.CAP_PROP_POS_MSEC)//1000))}',(10,50),cv2.FONT_HERSHEY_SIMPLEX, 1, (255, 255, 255), 2)
+    cv2.putText(layout3, f'3.0+1.11 bd: {str(datetime.timedelta(seconds=cap2.get(cv2.CAP_PROP_POS_MSEC)//1000))}',(10+1920,50),cv2.FONT_HERSHEY_SIMPLEX, 1, (255, 255, 255), 2)
+    cv2.putText(layout3, f'mse: {mse}, msec: {mse2}, msegb: {mse3}',(10,160+816+816),cv2.FONT_HERSHEY_SIMPLEX, 1, (255, 255, 255), 2)
     cv2.imshow('video', layout3)
+    out.write(layout3)
     key = cv2.waitKey(1)
     if key == ord('a'):
         cap1.set(cv2.CAP_PROP_POS_MSEC, cap1.get(cv2.CAP_PROP_POS_MSEC)+20000)
         cap2.set(cv2.CAP_PROP_POS_MSEC, cap2.get(cv2.CAP_PROP_POS_MSEC)+20000)
+    if key == ord('d'):
+        cap1.set(cv2.CAP_PROP_POS_MSEC, cap1.get(cv2.CAP_PROP_POS_MSEC)-20000)
+        cap2.set(cv2.CAP_PROP_POS_MSEC, cap2.get(cv2.CAP_PROP_POS_MSEC)-20000)
+    if key == ord(' '):
+        cv2.waitKey(0)
 
 # Release the video capture objects
 cap1.release()
 cap2.release()
+f.close()
