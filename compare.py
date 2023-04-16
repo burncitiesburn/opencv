@@ -12,8 +12,8 @@ cap2 = cv2.VideoCapture(str(Path('~').expanduser())+'/Documents/Evangelion - 3.3
 
 fourcc = cv2.VideoWriter_fourcc(*'mp4v') # codec
 target_fps = 23.976023976023978
-frameSize = (3840,1632)
-out = cv2.VideoWriter('output3.mp4', fourcc, target_fps, frameSize)
+frameSize = (4040,1832)
+out = cv2.VideoWriter('output.mp4', fourcc, target_fps, frameSize)
 # Get the original framerates
 orig_fps1 = cap1.get(cv2.CAP_PROP_FPS)
 orig_fps2 = cap2.get(cv2.CAP_PROP_FPS)
@@ -21,17 +21,16 @@ orig_fps2 = cap2.get(cv2.CAP_PROP_FPS)
 
 print(orig_fps1)
 print(orig_fps2)
+
 # Calculate the frame duration for the target framerate
 target_frame_duration = 1 / target_fps
-
-# Initialize a counter and timer for each video
-
 
 x_seconds = 0
 cap1.set(cv2.CAP_PROP_POS_FRAMES, 0)
 x_seconds = 0
 cap2.set(cv2.CAP_PROP_POS_FRAMES, 24)
 
+# Initialize a counter and timer for each video
 frame_counter1 = 1
 prev_frame_time1 = 0
 
@@ -50,9 +49,6 @@ while True:
     ret1, frame1 = cap1.read()
     ret2, frame2 = cap2.read()
     
-  
-    #print(ret1)
-    #print(ret2)
     # Break out of the loop if either video has reached its end
     if not ret1 or not ret2:
         break
@@ -100,32 +96,25 @@ while True:
     mse2 = np.mean(diff2 ** 2)
     mse3 = np.mean(diff3 ** 2)
     f.write(f'{cap1.get(cv2.CAP_PROP_POS_MSEC)/1000},{mse},{mse2},{mse3}\n')
-    #mse = (cv2.sumElems(diff)[0] / (diff.shape[0] * diff.shape[1])) ** 2
-    #print(mse)
-    # Display the difference between the frames
 
     layout = cv2.hconcat([frame1,frame2])
 
     diff = cv2.cvtColor(diff,cv2.COLOR_GRAY2BGR)
-
-    #converted_layout2_clr = cv2.addWeighted(diff2,20,diff2,2,0.0)
     
     layout2 = cv2.hconcat([diff,diff2])
-    #print(layout.shape)
-    #print(layout2.shape)
-    #print(converted_layout2_clr.shape)
     layout3 = cv2.vconcat([layout,layout2])
-    #cv2.imshow('f1g',frame1g)
-    #cv2.imshow('f2g',frame2g)
-    #print(layout3.shape)
-    #k = cv2.waitKey(1) & 0xFF
     layout3 = cv2.copyMakeBorder(layout3, 100, 100, 100, 100, cv2.BORDER_CONSTANT, value=[0, 0, 0])
+
     cv2.putText(layout3, f'3.33 BD: {str(datetime.timedelta(seconds=cap1.get(cv2.CAP_PROP_POS_MSEC)//1000))}',(110,50),cv2.FONT_HERSHEY_SIMPLEX, 1, (255, 255, 255), 2)
     cv2.putText(layout3, f'3.333 BD: {str(datetime.timedelta(seconds=cap2.get(cv2.CAP_PROP_POS_MSEC)//1000))}',(110+1920,50),cv2.FONT_HERSHEY_SIMPLEX, 1, (255, 255, 255), 2)
     cv2.putText(layout3, f'mse: {mse}, msec: {mse2}, msegb: {mse3}',(110,160+816+816),cv2.FONT_HERSHEY_SIMPLEX, 1, (255, 255, 255), 2)
+    
     cv2.imshow('video', layout3)
     out.write(layout3)
+    print(layout3.shape)
+
     key = cv2.waitKey(1)
+
     if key == ord('a'):
         cap1.set(cv2.CAP_PROP_POS_MSEC, cap1.get(cv2.CAP_PROP_POS_MSEC)+20000)
         cap2.set(cv2.CAP_PROP_POS_MSEC, cap2.get(cv2.CAP_PROP_POS_MSEC)+20000)
@@ -134,8 +123,14 @@ while True:
         cap2.set(cv2.CAP_PROP_POS_MSEC, cap2.get(cv2.CAP_PROP_POS_MSEC)-20000)
     if key == ord(' '):
         cv2.waitKey(0)
+    if key == ord('s'):
+        cap1.release()
+        cap2.release()
+        f.close()
+        out.release()
 
 # Release the video capture objects
 cap1.release()
 cap2.release()
 f.close()
+out.release() 
